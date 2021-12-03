@@ -1,0 +1,46 @@
+name: cicd-aws-s3
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Configure AWS Creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          aws-region: ap-south-1
+          # needs change ^?
+
+      # This will be decided if we need to store on workflow or not
+      # - name: create env file
+      #   run: |
+      #     touch .env
+      #     echo NEXT_PUBLIC_STRAPI_ENDPOINT=https://cms.masaischool.com/graphql >> .env
+      #     echo NEXT_PUBLIC_STRAPI_DOMAIN=https://cms.masaischool.com >> .env
+      #     echo NEXT_PUBLIC_IMAGE_SERVER=https://masai-website-images.s3.ap-south-1.amazonaws.com >> .env
+      #     echo NEXT_PUBLIC_CLEVERTAP_ID="TEST-4WK-R84-WK6Z" >> .env
+      #     echo NEXT_PUBLIC_CLEVERTAP_LOG="3" >> .env
+
+      # Cache
+      # - name: Cache
+      #   uses: actions/cache@2
+
+      - name: Install Packages
+        run: yarn
+
+      - name: Generate build
+        run: yarn build
+
+      - name: Deploy website on s3 bucket
+        run: aws s3 sync ./out/ s3://masaischool-website-dec-21-dev
+
+      # Invalidate Cache
+      # Validate if this is the right way to remove cache
+      # - name: Cloudfront Invalidation
+      #   run: aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_ID }} --paths "/*"
